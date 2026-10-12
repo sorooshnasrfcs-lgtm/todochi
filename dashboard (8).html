@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>داشبورد برنامه‌ریزی</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #e9ecf2;
+    --panel: #ffffff;
+    --panel-2: #f3f5f9;
+    --panel-3: #e8ecf3;
+    --line: #dce1ea;
+    --line-soft: #e6eaf1;
+    --text: #1b2030;
+    --muted: #68707d;
+    --muted-2: #9aa1ac;
+    --amber: #e2822f;
+    --amber-soft: #fbe4cd;
+    --purple: #1f5fc4;
+    --purple-soft: #dde9fb;
+    --green: #2f9e63;
+    --red: #c94f3f;
+    --blue: #1f5fc4;
+    --navy: #0e1c46;
+    --navy-2: #16255c;
+    --r-lg: 18px;
+    --r-md: 12px;
+    --r-sm: 8px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:'Vazirmatn', Tahoma, sans-serif;
+    background:
+      radial-gradient(900px 420px at 15% -10%, rgba(31,95,196,.06), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(226,130,47,.06), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    min-height:100vh;
+    padding: 32px 28px;
+    line-height:1.5;
+  }
+  .page{ max-width: 1220px; margin: 0 auto; display:flex; flex-direction:column; gap:20px; }
+
+  /* ---- Hero ---- */
+  .hero{
+    background:
+      radial-gradient(600px 300px at 90% -20%, rgba(255,255,255,.08), transparent 60%),
+      linear-gradient(135deg, var(--navy-2), var(--navy));
+    border: 1px solid var(--navy);
+    border-radius: var(--r-lg);
+    padding: 26px 28px;
+    display:flex; align-items:center; justify-content:space-between; gap:20px;
+    flex-wrap:wrap;
+  }
+  .hero-left .greet{ font-size:22px; font-weight:800; letter-spacing:-.2px; color:#fff; }
+  .hero-left .subdate{ font-size:13px; color:#aab6da; margin-top:6px; }
+  .hero-pills{ display:flex; gap:10px; flex-wrap:wrap; }
+  .pill{
+    background: rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14); border-radius: 999px;
+    padding:10px 18px; display:flex; align-items:center; gap:9px; font-size:13px; color:#fff;
+  }
+  .pill .dot{ width:8px; height:8px; border-radius:50%; }
+  .pill b{ font-size:15px; font-weight:800; color:#fff; }
+  .pill span.l{ color:#c3cce8; }
+
+  .wrap{ display:grid; grid-template-columns: 250px 1fr 290px; gap: 20px; }
+  @media (max-width: 980px){ .wrap{grid-template-columns: 1fr;} }
+
+  /* ---- Sidebar ---- */
+  .side{
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg);
+    padding: 20px; height: fit-content; display:flex; flex-direction:column; gap: 24px;
+  }
+  .ring-card{
+    background: var(--panel-2); border-radius: var(--r-md); padding: 16px;
+    display:flex; align-items:center; gap:14px; border:1px solid var(--line-soft);
+  }
+  .ring{ position:relative; width:58px; height:58px; flex:none;}
+  .ring svg{transform: rotate(-90deg);}
+  .ring .pct{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;}
+  .ring-card .label{font-size:12.5px; color:var(--muted); line-height:1.7;}
+  .ring-card .label b{color:var(--text); display:block; font-size:14.5px; font-weight:700;}
+
+  .nav-group h4{
+    font-size:11px; color:var(--muted-2); font-weight:700; text-transform:none;
+    margin-bottom:8px; padding: 0 2px;
+  }
+  .nav-item{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:9px 11px; border-radius:var(--r-sm); cursor:pointer;
+    font-size:13.5px; color:var(--text); margin-bottom:2px;
+    transition: background .15s, color .15s;
+  }
+  .nav-item:hover{background: var(--panel-2);}
+  .nav-item.active{background: var(--purple); color: #fff;}
+  .nav-item .count{
+    font-size:11px; color:var(--muted); background: var(--panel-2);
+    border-radius:20px; padding:2px 9px; min-width:22px; text-align:center;
+  }
+  .nav-item.active .count{color:#fff; background: rgba(255,255,255,.22);}
+  .cat-dot{width:8px; height:8px; border-radius:50%; display:inline-block; margin-left:9px;}
+
+  /* ---- Main ---- */
+  .main{ display:flex; flex-direction:column; gap:16px; }
+  .top-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;}
+  .top-row h1{ font-size: 20px; font-weight:800; letter-spacing:-.2px;}
+  .top-row p{ font-size:13px; color:var(--muted); margin-top:3px;}
+
+  .view-toggle{ display:flex; background: var(--panel); border:1px solid var(--line); border-radius:var(--r-sm); padding:3px; }
+  .view-toggle button{
+    background:none; border:none; color:var(--muted); font-family:inherit; font-size:13px;
+    padding:8px 16px; border-radius:7px; cursor:pointer; transition: all .15s;
+  }
+  .view-toggle button.active{ background: var(--purple); color:#1d1730; font-weight:700; }
+
+  .add-box{
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg);
+    padding: 16px 18px; display:flex; flex-direction:column; gap:12px;
+  }
+  .add-row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .add-box input[type=text]{
+    flex:1; min-width:200px; background: var(--panel-2); border:1px solid transparent; outline:none;
+    color: var(--text); font-family:inherit; font-size:14.5px; padding:11px 14px; border-radius:var(--r-sm);
+    transition: border-color .15s;
+  }
+  .add-box input[type=text]:focus{ border-color: var(--purple); }
+  .add-box input[type=text]::placeholder{ color: var(--muted); }
+  select, input[type=date]{
+    background: var(--panel-2); color: var(--text);
+    border:1px solid var(--line); border-radius:var(--r-sm);
+    padding:9px 12px; font-family:inherit; font-size:12.5px;
+    outline:none; cursor:pointer; transition: border-color .15s;
+  }
+  select:focus, input[type=date]:focus{ border-color: var(--purple); }
+  .btn-add{
+    background: var(--amber); color:#2b1f08; border:none;
+    border-radius:var(--r-sm); padding:10px 20px; font-weight:700;
+    font-family:inherit; font-size:13.5px; cursor:pointer; transition: filter .15s, transform .1s;
+  }
+  .btn-add:hover{ filter:brightness(1.08); }
+  .btn-add:active{ transform: scale(.97); }
+
+  .schedule-toggle{ display:flex; background: var(--panel-2); border-radius:var(--r-sm); padding:3px; gap:2px; }
+  .schedule-toggle button{
+    background:none; border:none; color:var(--muted); font-family:inherit; font-size:12.5px;
+    padding:8px 14px; border-radius:6px; cursor:pointer; transition: all .15s;
+  }
+  .schedule-toggle button.active{ background: var(--purple); color:#1d1730; font-weight:700; }
+
+  .weekday-picker{ display:flex; gap:6px; }
+  .wd-chip{
+    width:34px; height:34px; border-radius:var(--r-sm); border:1px solid var(--line);
+    background: var(--panel-2); color:var(--muted); font-family:inherit; font-size:12.5px;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; transition: all .15s;
+  }
+  .wd-chip:hover{ border-color: var(--purple); }
+  .wd-chip.sel{ background: var(--purple); border-color:var(--purple); color:#1d1730; font-weight:700; }
+
+  .sec{margin-bottom:22px;}
+  .sec-head{display:flex; align-items:center; gap:10px; margin:2px 4px 10px; font-size:14px; font-weight:800;}
+  .sec-head .sc{font-size:11px; font-weight:700; color:var(--muted); background:var(--panel-3); border-radius:20px; padding:2px 10px;}
+  .sec-head .bar{width:4px; height:16px; border-radius:2px;}
+  .tag.person{color:var(--text); background:var(--panel-2);}
+  .dgrid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:12px;}
+  .dgrid .full{grid-column:1 / -1;}
+  @media (max-width:760px){ .dgrid{grid-template-columns:1fr;} }
+  .dbox{border:1px solid var(--line); border-radius:var(--r-md); overflow:hidden; background:var(--panel);}
+  .dbox h5{font-size:13px; font-weight:800; padding:10px 14px; background:var(--panel-2); display:flex; align-items:center; gap:8px;}
+  .dbox h5 i{width:4px; height:14px; border-radius:2px; display:inline-block;}
+  .dtable{width:100%; border-collapse:collapse; font-size:13px;}
+  .dtable th{font-size:11px; color:var(--muted); font-weight:600; padding:7px 10px; text-align:right; border-bottom:1px solid var(--line);}
+  .dtable td{padding:7px 10px; border-bottom:1px solid var(--line-soft); vertical-align:middle;}
+  .dtable tr.dn td.tt{text-decoration:line-through; opacity:.5;}
+  .dtable input[type=text]{width:100%; background:var(--panel-2); border:1px solid var(--line); border-radius:6px; padding:7px 9px; font-family:inherit; font-size:12.5px; color:var(--text); outline:none;}
+  .dtable input[type=text]:focus{border-color:var(--purple);}
+  .dtable .btn-add{padding:6px 12px; font-size:13px;}
+  .st{background:var(--panel-2); border:1px solid var(--line); border-radius:6px; padding:5px 6px; font-family:inherit; font-size:12px; color:var(--text); width:100%;}
+  .st[data-s=doing]{color:var(--purple); border-color:var(--purple);}
+  .st[data-s=waiting]{color:var(--amber); border-color:var(--amber);}
+  .st[data-s=done]{color:var(--green); border-color:var(--green);}
+  .col-title{ font-size:12.5px; color:var(--muted); font-weight:600; margin: 2px 4px; }
+
+  .task-list{ display:flex; flex-direction:column; gap:9px; }
+  .task{
+    background: var(--panel); border:1px solid var(--line); border-radius: var(--r-md);
+    padding: 13px 15px; display:flex; align-items:center; gap:13px; transition: border-color .15s;
+  }
+  .task:hover{ border-color: var(--muted-2); }
+  .task.done{ opacity:.45; }
+  .task.done .t-title{ text-decoration: line-through; }
+  .task.rec{ border-color: var(--purple-soft); background: linear-gradient(180deg, rgba(31,95,196,.05), transparent); }
+  .chk{
+    width:20px; height:20px; border-radius:7px; border:2px solid var(--muted-2);
+    flex:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition: all .15s;
+  }
+  .chk:hover{ border-color: var(--green); }
+  .chk.checked{ background: var(--green); border-color:var(--green); color:#0d2117; font-size:12px; font-weight:900;}
+  .chk.disabled{ opacity:.25; cursor:not-allowed; }
+  .chk.disabled:hover{ border-color: var(--muted-2); }
+  .t-body{ flex:1; min-width:0; }
+  .t-title{ font-size:14.5px; font-weight:500; }
+  .t-meta{ display:flex; gap:7px; margin-top:6px; align-items:center; flex-wrap:wrap;}
+  .prog-row{ display:flex; align-items:center; gap:10px; margin-top:9px; }
+  .prog-slider{ flex:1; accent-color: var(--purple); cursor:pointer; height:4px; }
+  .prog-slider:disabled{ accent-color: var(--muted-2); cursor:not-allowed; opacity:.5; }
+  .prog-pct{ font-size:11.5px; color:var(--muted); font-weight:700; min-width:32px; text-align:left; }
+  .task.done .prog-pct{ color: var(--green); }
+  .tag{
+    font-size:11px; padding:3px 9px; border-radius:20px; border:1px solid var(--line);
+    color: var(--muted);
+  }
+  .tag.due{ color: var(--text); }
+  .tag.overdue{ color: var(--red); border-color: rgba(232,119,106,.4); }
+  .tag.rec-tag{ color: var(--purple); border-color: rgba(31,95,196,.3); }
+  .prio{ width:7px; height:7px; border-radius:50%; flex:none; }
+  .prio.high{ background: var(--red); }
+  .prio.mid{ background: var(--amber); }
+  .prio.low{ background: var(--blue); }
+  .del{
+    background:none; border:none; color:var(--muted-2); cursor:pointer;
+    font-size:15px; padding:6px 8px; border-radius:var(--r-sm); flex:none; transition: all .15s;
+  }
+  .del:hover{ color: var(--red); background: rgba(232,119,106,.1); }
+
+  .empty{
+    text-align:center; color: var(--muted); font-size:13.5px;
+    padding: 30px 10px; border:1.5px dashed var(--line); border-radius:var(--r-md);
+  }
+
+  /* ---- Calendar ---- */
+  .cal-card{ background: var(--panel); border:1px solid var(--line); border-radius:var(--r-lg); padding:20px; }
+  .cal-nav{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .cal-nav .cal-title{ font-weight:800; font-size:16px; }
+  .cal-nav button{
+    background: var(--panel-2); border:1px solid var(--line); color: var(--text);
+    width:32px; height:32px; border-radius:var(--r-sm); cursor:pointer; font-size:14px; transition: all .15s;
+  }
+  .cal-nav button:hover{ border-color: var(--purple); color:var(--purple); }
+  .cal-grid{ display:grid; grid-template-columns: repeat(7,1fr); gap:7px; }
+  .cal-dow{ text-align:center; font-size:11.5px; color:var(--muted-2); padding-bottom:8px; font-weight:600; }
+  .cal-cell{
+    aspect-ratio: 1/0.82; border-radius:var(--r-sm); border:1px solid var(--line-soft);
+    background: var(--panel-2); padding:7px; cursor:pointer; position:relative;
+    display:flex; flex-direction:column; gap:5px; transition: border-color .15s, background .15s;
+  }
+  .cal-cell:hover{ border-color: var(--purple); }
+  .cal-cell.empty-cell{ visibility:hidden; }
+  .cal-cell.today .cal-daynum{ color: var(--amber); }
+  .cal-cell.today{ border-color: rgba(226,130,47,.55); }
+  .cal-cell.sel{ background: var(--purple-soft); border-color: var(--purple); }
+  .cal-daynum{ font-size:12.5px; font-weight:700; }
+  .cal-dots{ display:flex; gap:3px; flex-wrap:wrap; }
+  .cal-dot{ width:6px; height:6px; border-radius:50%; }
+
+  .day-panel{ margin-top:18px; border-top:1px solid var(--line); padding-top:16px; }
+  .day-panel h4{ font-size:14px; margin-bottom:12px; font-weight:700; }
+  .quick-add{ display:flex; gap:8px; margin-top:12px; }
+  .quick-add input[type=text]{
+    flex:1; background: var(--panel-2); border:1px solid var(--line); border-radius:var(--r-sm);
+    padding:10px 12px; color:var(--text); font-family:inherit; font-size:13px; outline:none; transition: border-color .15s;
+  }
+  .quick-add input[type=text]:focus{ border-color: var(--purple); }
+
+  /* ---- Right panel ---- */
+  .right{ display:flex; flex-direction:column; gap:16px; }
+  .card{ background: var(--panel); border:1px solid var(--line); border-radius: var(--r-lg); padding: 18px; }
+  .card h3{ font-size:12.5px; margin-bottom:14px; color:var(--muted-2); font-weight:700; }
+  .stat-row{ display:flex; justify-content:space-between; margin-bottom:11px; font-size:13px;}
+  .stat-row .n{ font-weight:800; font-size:15px; }
+  .stat-row .l{ font-size:12.5px; color:var(--muted); }
+
+  .bar-bg{ height:7px; background: var(--panel-2); border-radius: 6px; overflow:hidden; }
+  .bar-fill{ height:100%; background: linear-gradient(90deg, var(--amber), #f0c988); border-radius:6px; transition: width .4s ease; }
+
+  .cat-row{ display:flex; align-items:center; justify-content:space-between; padding:8px 0; font-size:13px; }
+  .cat-row .cn{ display:flex; align-items:center; }
+
+  .rec-row{ font-size:12.5px; padding:9px 0; border-bottom:1px solid var(--line-soft); }
+  .rec-row:last-child{ border-bottom:none; padding-bottom:0; }
+  .rec-row .rt{ font-weight:600; margin-bottom:3px; }
+  .rec-row .rd{ color: var(--muted); }
+
+  ::-webkit-scrollbar{ width:9px; }
+  ::-webkit-scrollbar-thumb{ background: var(--line); border-radius: 8px; }
+  ::-webkit-scrollbar-thumb:hover{ background: var(--muted-2); }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="hero">
+    <div class="hero-left">
+      <div class="greet" id="heroGreet">خوش اومدی</div>
+      <div class="subdate" id="todayLabel"></div>
+    </div>
+    <div class="hero-pills">
+      <div class="pill"><span class="dot" style="background:var(--amber)"></span><span class="l">امروز</span><b id="hero-today">۰</b></div>
+      <div class="pill"><span class="dot" style="background:var(--red)"></span><span class="l">عقب‌افتاده</span><b id="hero-overdue">۰</b></div>
+      <div class="pill"><span class="dot" style="background:var(--green)"></span><span class="l">تکمیل امروز</span><b id="hero-progress">۰٪</b></div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <!-- SIDEBAR -->
+    <div class="side">
+      <div class="ring-card">
+        <div class="ring">
+          <svg width="58" height="58" viewBox="0 0 58 58">
+            <circle cx="29" cy="29" r="25" stroke="#e8ecf3" stroke-width="6" fill="none"/>
+            <circle id="ringProgress" cx="29" cy="29" r="25" stroke="#e2822f" stroke-width="6" fill="none"
+              stroke-linecap="round" stroke-dasharray="157.1" stroke-dashoffset="157.1"/>
+          </svg>
+          <div class="pct" id="ringPct">0%</div>
+        </div>
+        <div class="label">پیشرفت امروز<b id="doneTodayLbl">۰ از ۰</b></div>
+      </div>
+
+      <div class="nav-group">
+        <h4>نمایش</h4>
+        <div class="nav-item active" data-filter="all"><span>همه کارها</span><span class="count" id="cnt-all">0</span></div>
+        <div class="nav-item" data-filter="today"><span>امروز</span><span class="count" id="cnt-today">0</span></div>
+        <div class="nav-item" data-filter="upcoming"><span>آینده</span><span class="count" id="cnt-upcoming">0</span></div>
+        <div class="nav-item" data-filter="overdue"><span>عقب‌افتاده</span><span class="count" id="cnt-overdue">0</span></div>
+        <div class="nav-item" data-filter="done"><span>انجام‌شده</span><span class="count" id="cnt-done">0</span></div>
+      </div>
+
+      <div class="nav-group">
+        <h4>دسته‌بندی</h4>
+        <div class="nav-item cat-filter active" data-cat="all"><span>همه</span><span class="count" id="cnt-cat-all">0</span></div>
+        <div class="nav-item cat-filter" data-cat="کار"><span><i class="cat-dot" style="background:#1f5fc4"></i>کار</span><span class="count" id="cnt-cat-کار">0</span></div>
+        <div class="nav-item cat-filter" data-cat="شخصی"><span><i class="cat-dot" style="background:#e2822f"></i>شخصی</span><span class="count" id="cnt-cat-شخصی">0</span></div>
+        <div class="nav-item cat-filter" data-cat="یادگیری"><span><i class="cat-dot" style="background:#2f9e63"></i>یادگیری</span><span class="count" id="cnt-cat-یادگیری">0</span></div>
+        <div class="nav-item cat-filter" data-cat="خانه"><span><i class="cat-dot" style="background:#c94f3f"></i>خانه</span><span class="count" id="cnt-cat-خانه">0</span></div>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+      <div class="top-row">
+        <div>
+          <h1 id="mainTitle">همه‌ی کارها</h1>
+          <p id="mainSub">فهرست کارهایی که باید انجام بدی</p>
+        </div>
+        <div class="view-toggle">
+          <button id="viewListBtn" class="active">لیست</button>
+          <button id="viewCalBtn">تقویم</button>
+        </div>
+      </div>
+
+      <div class="add-box">
+        <div class="add-row">
+          <input type="text" id="newTitle" placeholder="یک کار جدید بنویس…" />
+          <select id="newCat">
+            <option value="کار">کار</option>
+            <option value="شخصی">شخصی</option>
+            <option value="یادگیری">یادگیری</option>
+            <option value="خانه">خانه</option>
+          </select>
+          <select id="newPrio">
+            <option value="mid">اولویت متوسط</option>
+            <option value="high">اولویت بالا</option>
+            <option value="low">اولویت پایین</option>
+          </select>
+          <select id="newKind">
+            <option value="mine">کار خودم</option>
+            <option value="assigned">سپرده‌شده به من</option>
+            <option value="followup">نیازمند پیگیری</option>
+          </select>
+          <input type="text" id="newPerson" placeholder="نام شخص…" style="display:none; flex:0 1 150px; min-width:110px;" />
+          <button class="btn-add" id="addBtn">افزودن</button>
+        </div>
+        <div class="add-row">
+          <div class="schedule-toggle">
+            <button id="scheduleOnceBtn" class="active" data-mode="once">یک‌بار برای یک تاریخ</button>
+            <button id="scheduleRecBtn" data-mode="rec">تکرارشونده در روزهای هفته</button>
+          </div>
+          <input type="date" id="newDate" />
+          <div class="weekday-picker" id="weekdayPicker" style="display:none;"></div>
+        </div>
+      </div>
+
+      <div id="listView">
+        <div class="col-title" id="listTitle">لیست کارها</div>
+        <div class="task-list" id="taskList"></div>
+      </div>
+
+      <div id="calView" style="display:none;">
+        <div class="cal-card">
+          <div class="cal-nav">
+            <button id="calPrev">‹</button>
+            <div class="cal-title" id="calTitle"></div>
+            <button id="calNext">›</button>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
+          <div class="day-panel" id="dayPanel"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right">
+      <div class="card">
+        <h3>خلاصه کلی</h3>
+        <div class="stat-row"><span class="l">کل کارهای یک‌بار</span><span class="n" id="s-total">0</span></div>
+        <div class="stat-row"><span class="l">انجام‌شده</span><span class="n" id="s-done">0</span></div>
+        <div class="stat-row"><span class="l">عقب‌افتاده</span><span class="n" id="s-overdue">0</span></div>
+        <div class="bar-bg" style="margin-top:8px;"><div class="bar-fill" id="s-bar" style="width:0%"></div></div>
+      </div>
+
+      <div class="card">
+        <h3>بر اساس دسته‌بندی</h3>
+        <div id="catBreakdown"></div>
+      </div>
+
+      <div class="card">
+        <h3>یادآوری‌های تکراری 🔁</h3>
+        <div id="recBreakdown"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let tasks = [];
+let currentStatusFilter = 'all';
+let currentCat = 'all';
+let currentView = 'list';
+let scheduleMode = 'once';
+let selectedWeekdays = [];
+let calAnchor = new Date();
+let selectedCalDate = null;
+const STORAGE_KEY = 'tasks-v2';
+
+const catColors = {'کار':'#1f5fc4','شخصی':'#e2822f','یادگیری':'#2f9e63','خانه':'#c94f3f'};
+const weekdayShort = {0:'ی',1:'د',2:'س',3:'چ',4:'پ',5:'ج',6:'ش'};
+const weekdayFull  = {0:'یکشنبه',1:'دوشنبه',2:'سه‌شنبه',3:'چهارشنبه',4:'پنجشنبه',5:'جمعه',6:'شنبه'};
+const iranianOrder = [6,0,1,2,3,4,5];
+const faDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+
+function toFa(n){ return String(n).replace(/[0-9]/g, d=>faDigits[d]); }
+function todayStr(){ return dateToStr(new Date()); }
+function dateToStr(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function fmtDateFa(dstr){
+  if(!dstr) return '';
+  const d = new Date(dstr+'T00:00:00');
+  return d.toLocaleDateString('fa-IR', {month:'short', day:'numeric'});
+}
+function getJalaliParts(date){
+  const parts = new Intl.DateTimeFormat('en-US-u-ca-persian', {year:'numeric', month:'numeric', day:'numeric'}).formatToParts(date);
+  const o = {};
+  parts.forEach(p=>{ if(p.type!=='literal') o[p.type]=parseInt(p.value,10); });
+  return {jy:o.year, jm:o.month, jd:o.day};
+}
+
+async function loadTasks(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    tasks = res && res.value ? JSON.parse(res.value) : [];
+  }catch(e){ tasks = []; }
+  render();
+}
+async function saveTasks(){
+  try{ await window.storage.set(STORAGE_KEY, JSON.stringify(tasks), false); }
+  catch(e){ console.error('ذخیره‌سازی ناموفق بود', e); }
+}
+
+function addTask(prefillDate){
+  const titleEl = document.getElementById('newTitle');
+  const title = titleEl.value.trim();
+  if(!title) return;
+  const cat = document.getElementById('newCat').value;
+  const prio = document.getElementById('newPrio').value;
+
+  let task = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    title, cat, prio, createdAt: todayStr(),
+    kind: document.getElementById('newKind').value,
+    person: document.getElementById('newPerson').value.trim()
+  };
+  if(task.kind==='mine') task.person='';
+  document.getElementById('newPerson').value='';
+
+  if(scheduleMode === 'rec'){
+    if(selectedWeekdays.length === 0){ alert('حداقل یک روز هفته رو انتخاب کن'); return; }
+    task.recurring = { weekdays: [...selectedWeekdays] };
+    task.completedDates = [];
+    task.date = null; task.done = false;
+  } else {
+    const dateVal = prefillDate || document.getElementById('newDate').value || null;
+    task.date = dateVal;
+    task.done = false;
+    task.recurring = null;
+  }
+
+  tasks.unshift(task);
+  titleEl.value = '';
+  document.getElementById('newDate').value = '';
+  saveTasks();
+  render();
+}
+
+function toggleDone(id, forDate){
+  const t = tasks.find(x=>x.id===id);
+  if(!t) return;
+  if(t.recurring){
+    const d = forDate || todayStr();
+    const idx = t.completedDates.indexOf(d);
+    if(idx>-1) t.completedDates.splice(idx,1); else t.completedDates.push(d);
+  } else {
+    t.done = !t.done;
+  }
+  saveTasks(); render();
+}
+function getNote(t, d){ return t.recurring ? ((t.noteByDate||{})[d]||'') : (t.note||''); }
+function setNote(t, d, v){
+  if(t.recurring){ t.noteByDate = t.noteByDate||{}; t.noteByDate[d]=v; } else t.note=v;
+}
+function escAttr(v){ return String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function deleteTask(id){
+  tasks = tasks.filter(x=>x.id!==id);
+  saveTasks(); render();
+}
+
+function isOverdue(t){ return t.date && !t.done && t.date < todayStr(); }
+function isToday(t){ return !t.recurring && t.date === todayStr(); }
+function isUpcoming(t){ return !t.recurring && t.date && !t.done && t.date > todayStr(); }
+function recurringActiveToday(t){ return t.recurring && t.recurring.weekdays.includes(new Date().getDay()); }
+function recurringDoneToday(t){ return t.recurring && t.completedDates.includes(todayStr()); }
+
+function matchesStatusFilter(t){
+  if(t.recurring){
+    switch(currentStatusFilter){
+      case 'today': return recurringActiveToday(t) && !recurringDoneToday(t);
+      case 'done': return recurringDoneToday(t);
+      case 'upcoming': return false;
+      case 'overdue': return false;
+      default: return true;
+    }
+  }
+  switch(currentStatusFilter){
+    case 'today': return isToday(t) && !t.done;
+    case 'upcoming': return isUpcoming(t);
+    case 'overdue': return isOverdue(t);
+    case 'done': return t.done;
+    default: return true;
+  }
+}
+function matchesCat(t){ return currentCat === 'all' || t.cat === currentCat; }
+
+const prioLabel = {high:'بالا', mid:'متوسط', low:'پایین'};
+const titleMap = {
+  all: ['همه‌ی کارها', 'فهرست کارهایی که باید انجام بدی'],
+  today: ['کارهای امروز', 'روی این‌ها امروز تمرکز کن'],
+  upcoming: ['کارهای آینده', 'کارهایی با تاریخ سررسید بعدی'],
+  overdue: ['عقب‌افتاده', 'این‌ها از سررسیدشون گذشته'],
+  done: ['انجام‌شده', 'کارهایی که تمومشون کردی']
+};
+
+function taskItemHtml(task){
+  const isRec = !!task.recurring;
+  const done = isRec ? recurringDoneToday(task) : task.done;
+  const overdue = !isRec && isOverdue(task);
+  const chkEnabled = !isRec || recurringActiveToday(task) || done;
+  return `
+    <div class="task ${done?'done':''} ${isRec?'rec':''}">
+      <div class="chk ${done?'checked':''} ${!chkEnabled?'disabled':''}" data-id="${task.id}">${done?'✓':''}</div>
+      <span class="prio ${task.prio}"></span>
+      <div class="t-body">
+        <div class="t-title">${escapeHtml(task.title)}</div>
+        <div class="t-meta">
+          <span class="tag" style="color:${catColors[task.cat]}">${task.cat}</span>
+          ${isRec
+            ? `<span class="tag rec-tag">🔁 هر ${task.recurring.weekdays.map(w=>weekdayFull[w]).join('، ')}</span>`
+            : (task.date ? `<span class="tag due ${overdue?'overdue':''}">${overdue?'عقب‌افتاده · ':''}${fmtDateFa(task.date)}</span>` : '')}
+          ${task.person ? `<span class="tag person">${task.kind==='followup'?'مسئول':'از طرف'}: ${escapeHtml(task.person)}</span>` : ''}
+          <span class="tag">اولویت ${prioLabel[task.prio]}</span>
+        </div>
+      </div>
+      <button class="del" data-id="${task.id}">✕</button>
+    </div>`;
+}
+
+function render(){
+  document.getElementById('listView').style.display = currentView==='list' ? '' : 'none';
+  document.getElementById('calView').style.display = currentView==='cal' ? '' : 'none';
+  document.getElementById('viewListBtn').classList.toggle('active', currentView==='list');
+  document.getElementById('viewCalBtn').classList.toggle('active', currentView==='cal');
+
+  if(currentView==='list') renderList(); else renderCalendar();
+  updateSidebarAndStats();
+}
+
+function renderList(){
+  const [t, s] = titleMap[currentStatusFilter];
+  document.getElementById('mainTitle').textContent = t;
+  document.getElementById('mainSub').textContent = s;
+
+  let list = tasks.filter(matchesStatusFilter).filter(matchesCat);
+  list.sort((a,b)=>{
+    if(!!a.recurring !== !!b.recurring) return a.recurring ? 1 : -1;
+    const aDone = a.recurring ? recurringDoneToday(a) : a.done;
+    const bDone = b.recurring ? recurringDoneToday(b) : b.done;
+    if(aDone !== bDone) return aDone ? 1 : -1;
+    const pw = {high:0, mid:1, low:2};
+    if((a.date||'') !== (b.date||'')) return (a.date||'9999') < (b.date||'9999') ? -1 : 1;
+    return pw[a.prio]-pw[b.prio];
+  });
+
+  const listEl = document.getElementById('taskList');
+  const SECTIONS = [
+    {k:'mine', t:'کارهایی که باید انجام بدهم', c:'var(--purple)', e:'کاری برای انجام نداری.'},
+    {k:'assigned', t:'کارهای سپرده‌شده به من', c:'var(--amber)', e:'کاری به تو سپرده نشده.'},
+    {k:'followup', t:'نیازمند پیگیری', c:'var(--red)', e:'موردی برای پیگیری نیست.'}
+  ];
+  listEl.innerHTML = SECTIONS.map(sec=>{
+    const items = list.filter(t=>(t.kind||'mine')===sec.k);
+    return `<div class="sec"><div class="sec-head"><span class="bar" style="background:${sec.c}"></span>${sec.t}<span class="sc">${toFa(items.length)}</span></div>
+      <div class="task-list">${items.length ? items.map(taskItemHtml).join('') : `<div class="empty">${sec.e}</div>`}</div></div>`;
+  }).join('');
+
+  listEl.querySelectorAll('.chk:not(.disabled)').forEach(el=>{
+    el.addEventListener('click', ()=>toggleDone(el.dataset.id));
+  });
+  listEl.querySelectorAll('.del').forEach(el=>{
+    el.addEventListener('click', ()=>deleteTask(el.dataset.id));
+  });
+}
+
+function buildMonthDays(anchor){
+  const target = getJalaliParts(anchor);
+  const days = [];
+  for(let off=-40; off<=40; off++){
+    const d = new Date(anchor);
+    d.setDate(d.getDate()+off);
+    const p = getJalaliParts(d);
+    if(p.jy===target.jy && p.jm===target.jm){
+      days.push({date:d, jd:p.jd, jsWeekday:d.getDay()});
+    }
+  }
+  days.sort((a,b)=>a.jd-b.jd);
+  return days;
+}
+
+function tasksForDate(dateObj){
+  const dstr = dateToStr(dateObj);
+  const wd = dateObj.getDay();
+  const oneOff = tasks.filter(t=>!t.recurring && t.date===dstr);
+  const recurring = tasks.filter(t=>t.recurring && t.recurring.weekdays.includes(wd));
+  return {oneOff, recurring, dstr};
+}
+
+function renderCalendar(){
+  document.getElementById('calTitle').textContent =
+    new Intl.DateTimeFormat('fa-IR-u-ca-persian', {month:'long', year:'numeric'}).format(calAnchor);
+
+  const grid = document.getElementById('calGrid');
+  const dowLabels = iranianOrder.map(w=>weekdayShort[w]);
+  let html = dowLabels.map(l=>`<div class="cal-dow">${l}</div>`).join('');
+
+  const days = buildMonthDays(calAnchor);
+  const firstCol = iranianOrder.indexOf(days[0].jsWeekday);
+  for(let i=0;i<firstCol;i++) html += '<div class="cal-cell empty-cell"></div>';
+
+  const todayS = todayStr();
+  days.forEach(day=>{
+    const dstr = dateToStr(day.date);
+    const {oneOff, recurring} = tasksForDate(day.date);
+    const dots = [
+      ...oneOff.map(t=>`<span class="cal-dot" style="background:${catColors[t.cat]}"></span>`),
+      ...recurring.map(()=>`<span class="cal-dot" style="background:var(--purple)"></span>`)
+    ].slice(0,6).join('');
+    const isToday = dstr === todayS;
+    const isSel = selectedCalDate === dstr;
+    html += `<div class="cal-cell ${isToday?'today':''} ${isSel?'sel':''}" data-date="${dstr}">
+      <div class="cal-daynum">${toFa(day.jd)}</div>
+      <div class="cal-dots">${dots}</div>
+    </div>`;
+  });
+  grid.innerHTML = html;
+
+  grid.querySelectorAll('.cal-cell[data-date]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      selectedCalDate = el.dataset.date;
+      renderCalendar();
+    });
+  });
+
+  renderDayPanel();
+}
+
+function dayTableHtml(kind, title, color, items, sel){
+  const personLbl = kind==='followup' ? 'مسئول' : 'از طرف';
+  const hasP = kind!=='mine';
+  const hasS = kind!=='followup';
+  const rows = items.map(t=>{
+    const dn = t.recurring ? t.completedDates.includes(sel) : t.done;
+    return `<tr class="${dn?'dn':''}"><td style="width:36px"><div class="chk ${dn?'checked':''}" data-id="${t.id}">${dn?'✓':''}</div></td>
+      <td class="tt">${escapeHtml(t.title)}${t.recurring?' 🔁':''}</td>${hasP?`<td>${escapeHtml(t.person||'—')}</td>`:''}${hasS?`<td style="width:150px"><input type="text" class="stn" data-stid="${t.id}" value="${escAttr(getNote(t,sel))}" placeholder="وضعیت را بنویس…"></td>`:''}
+      <td style="width:36px"><button class="del" data-id="${t.id}">✕</button></td></tr>`;
+  }).join('');
+  return `<div class="dbox ${kind==='followup'?'full':''}"><h5><i style="background:${color}"></i>${title}</h5>
+    <table class="dtable"><tr><th></th><th>عنوان</th>${hasP?`<th>${personLbl}</th>`:''}${hasS?'<th>وضعیت</th>':''}<th></th></tr>${rows}
+    <tr><td></td><td><input type="text" id="in-${kind}" placeholder="کار جدید…"></td>${hasP?`<td><input type="text" id="pn-${kind}" placeholder="نام"></td>`:''}${hasS?`<td><input type="text" id="st-${kind}" placeholder="وضعیت"></td>`:''}
+    <td><button class="btn-add" data-add="${kind}">+</button></td></tr></table></div>`;
+}
+
+function renderDayPanel(){
+  const panel = document.getElementById('dayPanel');
+  if(!selectedCalDate){
+    panel.innerHTML = '<div style="font-size:12.5px; color:var(--muted);">روی یک روز کلیک کن تا جدول‌های همان روز باز شود.</div>';
+    return;
+  }
+  const sel = selectedCalDate;
+  const dObj = new Date(sel+'T00:00:00');
+  const {oneOff, recurring} = tasksForDate(dObj);
+  const all = [...oneOff, ...recurring];
+  const by = k => all.filter(t=>(t.kind||'mine')===k);
+  const faDate = dObj.toLocaleDateString('fa-IR', {weekday:'long', day:'numeric', month:'long'});
+
+  panel.innerHTML = `<h4>${faDate}</h4><div class="dgrid">
+    ${dayTableHtml('mine','کارهایی که باید انجام بدهم','var(--purple)',by('mine'),sel)}
+    ${dayTableHtml('assigned','کارهای سپرده‌شده به من','var(--amber)',by('assigned'),sel)}
+    ${dayTableHtml('followup','نیازمند پیگیری','var(--red)',by('followup'),sel)}
+  </div>`;
+
+  panel.querySelectorAll('.chk').forEach(el=>el.addEventListener('click', ()=>toggleDone(el.dataset.id, sel)));
+  panel.querySelectorAll('.del').forEach(el=>el.addEventListener('click', ()=>deleteTask(el.dataset.id)));
+  panel.querySelectorAll('input.stn').forEach(el=>{
+    el.addEventListener('change', ()=>{
+      const t = tasks.find(x=>x.id===el.dataset.stid);
+      if(t){ setNote(t, sel, el.value.trim()); saveTasks(); }
+    });
+    el.addEventListener('keydown', e=>{ if(e.key==='Enter') el.blur(); });
+  });
+  const add = kind=>{
+    const inp = document.getElementById('in-'+kind);
+    const title = inp.value.trim();
+    if(!title) return;
+    const pn = document.getElementById('pn-'+kind);
+    tasks.unshift({
+      id: Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+      title, cat: document.getElementById('newCat').value, prio: document.getElementById('newPrio').value,
+      date: sel, done:false, recurring:null, kind, person: pn ? pn.value.trim() : '', createdAt: todayStr()
+    });
+    const stEl = document.getElementById('st-'+kind);
+    if(stEl && stEl.value.trim()) setNote(tasks[0], sel, stEl.value.trim());
+    saveTasks(); renderCalendar(); updateSidebarAndStats();
+  };
+  panel.querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click', ()=>add(b.dataset.add)));
+  panel.querySelectorAll('.dtable input[id]').forEach(i=>i.addEventListener('keydown', e=>{
+    if(e.key==='Enter') add(i.id.split('-')[1]);
+  }));
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function updateSidebarAndStats(){
+  const oneOffTasks = tasks.filter(t=>!t.recurring);
+  const recTasks = tasks.filter(t=>t.recurring);
+  const total = oneOffTasks.length;
+  const done = oneOffTasks.filter(t=>t.done).length;
+  const overdue = oneOffTasks.filter(isOverdue).length;
+  const todayTasks = oneOffTasks.filter(t=>isToday(t));
+  const todayDone = todayTasks.filter(t=>t.done).length;
+  const todayRecActive = recTasks.filter(recurringActiveToday);
+  const todayRecDone = todayRecActive.filter(recurringDoneToday).length;
+  const upcoming = oneOffTasks.filter(isUpcoming).length;
+
+  document.getElementById('cnt-all').textContent = tasks.length;
+  document.getElementById('cnt-today').textContent = todayTasks.filter(t=>!t.done).length + todayRecActive.filter(t=>!recurringDoneToday(t)).length;
+  document.getElementById('cnt-upcoming').textContent = upcoming;
+  document.getElementById('cnt-overdue').textContent = overdue;
+  document.getElementById('cnt-done').textContent = done + recTasks.filter(recurringDoneToday).length;
+
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-done').textContent = done;
+  document.getElementById('s-overdue').textContent = overdue;
+  document.getElementById('s-bar').style.width = total ? Math.round(done/total*100)+'%' : '0%';
+
+  document.getElementById('cnt-cat-all').textContent = tasks.length;
+  ['کار','شخصی','یادگیری','خانه'].forEach(c=>{
+    const el = document.getElementById('cnt-cat-'+c);
+    if(el) el.textContent = tasks.filter(t=>t.cat===c).length;
+  });
+
+  const bd = document.getElementById('catBreakdown');
+  bd.innerHTML = ['کار','شخصی','یادگیری','خانه'].map(c=>{
+    const count = tasks.filter(t=>t.cat===c).length;
+    return `<div class="cat-row"><span class="cn"><i class="cat-dot" style="background:${catColors[c]}"></i>${c}</span><span>${count}</span></div>`;
+  }).join('');
+
+  const rb = document.getElementById('recBreakdown');
+  rb.innerHTML = recTasks.length===0
+    ? '<div style="font-size:12.5px; color:var(--muted);">هنوز یادآوری تکراری‌ای نساختی.</div>'
+    : recTasks.map(t=>`
+        <div class="rec-row">
+          <div class="rt">${escapeHtml(t.title)}</div>
+          <div class="rd">هر ${t.recurring.weekdays.map(w=>weekdayFull[w]).join('، ')}</div>
+        </div>`).join('');
+
+  const todayTotal = todayTasks.length + todayRecActive.length;
+  const todayDoneAll = todayDone + todayRecDone;
+  const pct = todayTotal ? Math.round(todayDoneAll / todayTotal * 100) : 0;
+  const circumference = 157.1;
+  const offset = circumference - (pct/100*circumference);
+  document.getElementById('ringProgress').style.strokeDashoffset = offset;
+  document.getElementById('ringPct').textContent = pct + '%';
+  document.getElementById('doneTodayLbl').textContent = `${toFa(todayDoneAll)} از ${toFa(todayTotal)}`;
+
+  document.getElementById('hero-today').textContent = toFa(todayTotal - todayDoneAll);
+  document.getElementById('hero-overdue').textContent = toFa(overdue);
+  document.getElementById('hero-progress').textContent = toFa(pct) + '٪';
+}
+
+function setGreeting(){
+  const h = new Date().getHours();
+  let g = 'شب بخیر';
+  if(h>=5 && h<12) g='صبح بخیر';
+  else if(h>=12 && h<17) g='ظهر بخیر';
+  else if(h>=17 && h<21) g='عصر بخیر';
+  document.getElementById('heroGreet').textContent = g + '، بریم سراغ کارها';
+}
+
+// ---- events ----
+document.getElementById('newKind').addEventListener('change', e=>{
+  document.getElementById('newPerson').style.display = e.target.value==='mine' ? 'none' : '';
+});
+document.getElementById('addBtn').addEventListener('click', ()=>addTask());
+document.getElementById('newTitle').addEventListener('keydown', e=>{ if(e.key==='Enter') addTask(); });
+
+document.querySelectorAll('.nav-item[data-filter]').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-item[data-filter]').forEach(x=>x.classList.remove('active'));
+    el.classList.add('active');
+    currentStatusFilter = el.dataset.filter;
+    render();
+  });
+});
+document.querySelectorAll('.cat-filter').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    document.querySelectorAll('.cat-filter').forEach(x=>x.classList.remove('active'));
+    el.classList.add('active');
+    currentCat = el.dataset.cat;
+    render();
+  });
+});
+
+document.getElementById('viewListBtn').addEventListener('click', ()=>{ currentView='list'; render(); });
+document.getElementById('viewCalBtn').addEventListener('click', ()=>{ currentView='cal'; render(); });
+
+document.getElementById('scheduleOnceBtn').addEventListener('click', ()=>{
+  scheduleMode = 'once';
+  document.getElementById('scheduleOnceBtn').classList.add('active');
+  document.getElementById('scheduleRecBtn').classList.remove('active');
+  document.getElementById('newDate').style.display = '';
+  document.getElementById('weekdayPicker').style.display = 'none';
+});
+document.getElementById('scheduleRecBtn').addEventListener('click', ()=>{
+  scheduleMode = 'rec';
+  document.getElementById('scheduleRecBtn').classList.add('active');
+  document.getElementById('scheduleOnceBtn').classList.remove('active');
+  document.getElementById('newDate').style.display = 'none';
+  document.getElementById('weekdayPicker').style.display = 'flex';
+});
+
+const wpEl = document.getElementById('weekdayPicker');
+iranianOrder.forEach(w=>{
+  const chip = document.createElement('div');
+  chip.className = 'wd-chip';
+  chip.textContent = weekdayShort[w];
+  chip.dataset.wd = w;
+  chip.addEventListener('click', ()=>{
+    const idx = selectedWeekdays.indexOf(w);
+    if(idx>-1) selectedWeekdays.splice(idx,1); else selectedWeekdays.push(w);
+    chip.classList.toggle('sel');
+  });
+  wpEl.appendChild(chip);
+});
+
+document.getElementById('calPrev').addEventListener('click', ()=>{
+  calAnchor.setDate(calAnchor.getDate()-30);
+  selectedCalDate = null;
+  renderCalendar();
+});
+document.getElementById('calNext').addEventListener('click', ()=>{
+  calAnchor.setDate(calAnchor.getDate()+30);
+  selectedCalDate = null;
+  renderCalendar();
+});
+
+document.getElementById('todayLabel').textContent = new Date().toLocaleDateString('fa-IR', {weekday:'long', day:'numeric', month:'long'});
+setGreeting();
+loadTasks();
+</script>
+</body>
+</html>
