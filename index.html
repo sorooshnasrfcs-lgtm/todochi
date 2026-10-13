@@ -5,6 +5,8 @@
 <title>داشبورد برنامه‌ریزی</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="config.js"></script>
+<script src="supabase.js"></script>
 <style>
   :root{
     --bg: #e9ecf2;
@@ -183,6 +185,41 @@
   .st[data-s=done]{color:var(--green); border-color:var(--green);}
   .bk-btn{background:var(--panel-2); border:1px solid var(--line); color:var(--text); border-radius:var(--r-sm); padding:9px 12px; font-family:inherit; font-size:12.5px; cursor:pointer; text-align:right; transition:border-color .15s;}
   .bk-btn:hover{border-color:var(--purple); color:var(--purple);}
+  #gate{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:var(--bg); z-index:200; padding:20px; overflow:auto;}
+  .auth-card{background:var(--panel); border:1px solid var(--line); border-radius:var(--r-lg); padding:28px 26px; width:100%; max-width:380px; display:flex; flex-direction:column; gap:12px; box-shadow:0 10px 40px rgba(14,28,70,.12);}
+  .auth-brand{font-size:22px; font-weight:800; color:var(--navy);}
+  .auth-sub{font-size:13px; color:var(--muted); margin-top:-6px;}
+  .auth-card input{background:var(--panel-2); border:1px solid var(--line); border-radius:var(--r-sm); padding:11px 13px; font-family:inherit; font-size:14px; color:var(--text); outline:none;}
+  .auth-card input:focus{border-color:var(--purple);}
+  .auth-tabs{display:flex; background:var(--panel-2); border-radius:var(--r-sm); padding:3px;}
+  .auth-tabs button{flex:1; background:none; border:none; padding:9px; border-radius:6px; font-family:inherit; font-size:13px; color:var(--muted); cursor:pointer;}
+  .auth-tabs button.active{background:var(--purple); color:#fff; font-weight:700;}
+  .auth-go{padding:12px; font-size:14px;}
+  .auth-go:disabled{opacity:.6; cursor:wait;}
+  .auth-msg{font-size:12.5px; min-height:18px; line-height:1.7;}
+  .auth-msg.err{color:var(--red);} .auth-msg.ok{color:var(--green);}
+  .auth-note{font-size:12px; color:var(--muted); line-height:1.8;}
+  .auth-row{display:flex; gap:8px;}
+  .auth-row .bk-btn{flex:1; text-align:center;}
+  .userbox{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12.5px; color:#c3cce8;}
+  .userbox b{color:#fff; font-weight:700;}
+  .ubtn{background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); color:#fff; border-radius:999px; padding:6px 14px; font-family:inherit; font-size:12px; cursor:pointer;}
+  .ubtn:hover{background:rgba(255,255,255,.18);}
+  .ubtn .nb{background:var(--amber); color:#2b1708; border-radius:999px; padding:0 7px; margin-right:6px; font-weight:800;}
+  .ov{position:fixed; inset:0; background:rgba(14,28,70,.45); display:none; align-items:flex-start; justify-content:center; padding:40px 16px; overflow:auto; z-index:150;}
+  .ov.open{display:flex;}
+  .ov-card{background:var(--panel); border-radius:var(--r-lg); padding:22px; width:100%; max-width:900px;}
+  .ov-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; font-size:15px;}
+  .atable{width:100%; border-collapse:collapse; font-size:12.5px;}
+  .atable th{font-size:11px; color:var(--muted); font-weight:600; text-align:right; padding:8px; border-bottom:1px solid var(--line);}
+  .atable td{padding:9px 8px; border-bottom:1px solid var(--line-soft); vertical-align:middle;}
+  .atable .em{direction:ltr; text-align:right; font-size:12px; color:var(--muted);}
+  .pill-s{display:inline-block; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px;}
+  .pill-s.ok{background:#dcefe6; color:var(--green);} .pill-s.wait{background:var(--amber-soft); color:var(--amber);}
+  .abtn{border:1px solid var(--line); background:var(--panel-2); color:var(--text); border-radius:6px; padding:5px 10px; font-family:inherit; font-size:11.5px; cursor:pointer; margin-left:4px;}
+  .abtn:hover{border-color:var(--purple); color:var(--purple);}
+  .abtn.go{background:var(--green); color:#fff; border-color:var(--green);}
+  .abtn.no{color:var(--red);}
   .col-title{ font-size:12.5px; color:var(--muted); font-weight:600; margin: 2px 4px; }
 
   .task-list{ display:flex; flex-direction:column; gap:9px; }
@@ -293,7 +330,15 @@
 </head>
 <body>
 
-<div class="page">
+<div id="gate"></div>
+
+<div class="ov" id="adminModal"><div class="ov-card">
+  <div class="ov-head"><b>مدیریت کاربران</b><button class="bk-btn" onclick="closeAdmin()">بستن</button></div>
+  <div id="adminBody"></div>
+  <p style="font-size:11.5px; color:var(--muted); margin-top:14px;">ادمین فقط تعداد کارهای هر کاربر را می‌بیند، نه محتوای آن‌ها؛ تسک‌های هر نفر کاملاً جدا و خصوصی است.</p>
+</div></div>
+
+<div class="page" id="app" style="display:none">
 
   <div class="hero">
     <div class="hero-left">
@@ -301,6 +346,7 @@
       <div class="subdate" id="todayLabel"></div>
         <div class="subdate" id="storeInfo" style="font-size:11.5px; margin-top:3px;"></div>
     </div>
+    <div class="userbox" id="userBox"></div>
     <div class="hero-pills">
       <div class="pill"><span class="dot" style="background:var(--amber)"></span><span class="l">امروز</span><b id="hero-today">۰</b></div>
       <div class="pill"><span class="dot" style="background:var(--red)"></span><span class="l">عقب‌افتاده</span><b id="hero-overdue">۰</b></div>
@@ -423,10 +469,9 @@
       <div class="card">
         <h3>پشتیبان‌گیری</h3>
         <div style="display:flex; flex-direction:column; gap:8px;">
-          <button class="bk-btn" onclick="exportDb()">دانلود فایل SQLite (.db)</button>
           <button class="bk-btn" onclick="exportJson()">دانلود فایل JSON</button>
           <button class="bk-btn" onclick="document.getElementById('restoreInput').click()">بازیابی از فایل</button>
-          <input type="file" id="restoreInput" accept=".db,.sqlite,.json" style="display:none" onchange="restoreFile(this.files[0]); this.value='';">
+          <input type="file" id="restoreInput" accept=".json" style="display:none" onchange="restoreFile(this.files[0]); this.value='';">
         </div>
       </div>
 
@@ -473,113 +518,213 @@ function getJalaliParts(date){
   return {jy:o.year, jm:o.month, jd:o.day};
 }
 
-let backend = 'none';
-let saveChain = Promise.resolve();
-let SQLMOD = null, SQLDB = null;
+/* ---------- Supabase: ورود، پروفایل، ذخیره‌ی کارهای هر کاربر ---------- */
+const CFG = window.APP_CONFIG || {};
+let sb = null, me = null, myProfile = null, entering = false;
+let synced = new Map(), posMap = new Map(), lastPos = 0, saveChain = Promise.resolve();
+function byId(id){ return document.getElementById(id); }
 
-/* ---------- SQLite داخل مرورگر (sql.js) + ذخیره‌ی پایدار در IndexedDB ---------- */
-function idbOpen(){
-  return new Promise((res,rej)=>{
-    const r = indexedDB.open('planner-db',1);
-    r.onupgradeneeded = ()=>r.result.createObjectStore('kv');
-    r.onsuccess = ()=>res(r.result); r.onerror = ()=>rej(r.error);
-  });
+function faErr(e){
+  const m = (e && e.message) || String(e);
+  const map = [
+    [/invalid login credentials/i,'ایمیل یا رمز عبور اشتباه است'],
+    [/email not confirmed/i,'ایمیل هنوز تأیید نشده؛ لینکی که به ایمیلت رسیده را بزن'],
+    [/already registered|already been registered/i,'این ایمیل قبلاً ثبت‌نام کرده است'],
+    [/password should be at least|weak password/i,'رمز عبور خیلی ساده یا کوتاه است'],
+    [/rate limit|too many/i,'تعداد تلاش‌ها زیاد بود؛ کمی بعد دوباره امتحان کن'],
+    [/failed to fetch|network|load failed/i,'اتصال اینترنت یا سرور برقرار نیست'],
+    [/row-level security/i,'دسترسی حساب شما برای این کار فعال نیست'],
+    [/valid email|invalid email/i,'ایمیل معتبر نیست'],
+  ];
+  for(const [re,t] of map) if(re.test(m)) return t;
+  return 'خطا: '+m;
 }
-async function idbGet(k){
-  const d = await idbOpen();
-  return new Promise((res,rej)=>{ const q=d.transaction('kv').objectStore('kv').get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); });
-}
-async function idbSet(k,v){
-  const d = await idbOpen();
-  return new Promise((res,rej)=>{ const tx=d.transaction('kv','readwrite'); tx.objectStore('kv').put(v,k); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); });
-}
-function loadScript(src){
-  return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>rej(new Error('load '+src)); document.head.appendChild(s); });
-}
-const SCHEMA = `CREATE TABLE IF NOT EXISTS tasks (
-  id TEXT PRIMARY KEY, position INTEGER NOT NULL, title TEXT, kind TEXT, category TEXT,
-  priority TEXT, task_date TEXT, person TEXT, note TEXT, done INTEGER, recurring TEXT, data TEXT NOT NULL)`;
-async function openWasmDb(){
-  await loadScript('sql-wasm.js');
-  SQLMOD = await initSqlJs({locateFile: f=>f});
-  let bytes = null;
-  try{ bytes = await idbGet('db'); }catch(e){}
-  SQLDB = bytes ? new SQLMOD.Database(bytes) : new SQLMOD.Database();
-  SQLDB.run(SCHEMA);
-}
-function dbReadTasks(db){
-  const r = db.exec('SELECT data FROM tasks ORDER BY position');
-  return r.length ? r[0].values.map(v=>JSON.parse(v[0])) : [];
-}
-function dbWriteTasks(db, items){
-  db.run('BEGIN');
-  try{
-    db.run('DELETE FROM tasks');
-    const st = db.prepare('INSERT INTO tasks VALUES (?,?,?,?,?,?,?,?,?,?,?,?)');
-    items.forEach((t,i)=>st.run([
-      String(t.id), i, t.title ?? null, t.kind || 'mine', t.cat ?? null, t.prio ?? null,
-      t.date ?? null, t.person ?? null, t.note ?? null, t.done ? 1 : 0,
-      t.recurring ? JSON.stringify(t.recurring) : null, JSON.stringify(t)
-    ]));
-    st.free(); db.run('COMMIT');
-  }catch(e){ db.run('ROLLBACK'); throw e; }
-}
-
-/* ---------- بارگذاری / ذخیره ---------- */
-function lsRead(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }catch(e){ return []; } }
 function setStoreInfo(txt, bad){
-  const el = document.getElementById('storeInfo');
+  const el = byId('storeInfo');
   if(el){ el.textContent = txt; el.style.color = bad ? '#ff9b8f' : ''; }
 }
-async function loadTasks(){
-  // ۱) سرور محلی (server.py + فایل tasks.db)
+function showGate(html){ byId('app').style.display='none'; const g=byId('gate'); g.style.display='flex'; g.innerHTML=html; }
+function hideGate(){ byId('gate').style.display='none'; byId('app').style.display=''; }
+function setAuthMsg(t,k){ const el=byId('authMsg'); if(el){ el.textContent=t; el.className='auth-msg '+(k||''); } }
+
+function authView(mode, msg, kind){
+  const signup = mode==='signup';
+  showGate(`<div class="auth-card">
+    <div class="auth-brand">برنامه‌ریز</div>
+    <p class="auth-sub">${signup?'ساخت حساب جدید':'ورود به حساب کاربری'}</p>
+    <div class="auth-tabs"><button data-m="login" class="${signup?'':'active'}">ورود</button><button data-m="signup" class="${signup?'active':''}">ثبت‌نام</button></div>
+    ${signup?'<input id="fName" type="text" placeholder="نام و نام خانوادگی" autocomplete="name">':''}
+    <input id="fEmail" type="email" placeholder="ایمیل" autocomplete="email" dir="ltr">
+    <input id="fPass" type="password" placeholder="رمز عبور (حداقل ۶ کاراکتر)" autocomplete="${signup?'new-password':'current-password'}" dir="ltr">
+    <div class="auth-msg ${kind||''}" id="authMsg">${escapeHtml(msg||'')}</div>
+    <button class="btn-add auth-go" id="authGo">${signup?'ثبت‌نام':'ورود'}</button>
+    ${signup?'<p class="auth-note">بعد از ثبت‌نام، حساب تو باید توسط ادمین فعال شود تا بتوانی کارهایت را ثبت کنی.</p>':''}
+  </div>`);
+  document.querySelectorAll('.auth-tabs button').forEach(b=>b.addEventListener('click', ()=>authView(b.dataset.m)));
+  byId('authGo').addEventListener('click', ()=>doAuth(mode));
+  ['fName','fEmail','fPass'].forEach(id=>{ const el=byId(id); if(el) el.addEventListener('keydown', e=>{ if(e.key==='Enter') doAuth(mode); }); });
+}
+async function doAuth(mode){
+  const email = byId('fEmail').value.trim(), pass = byId('fPass').value;
+  const name = mode==='signup' ? byId('fName').value.trim() : '';
+  if(mode==='signup' && !name) return setAuthMsg('نام را وارد کن','err');
+  if(!email || !pass) return setAuthMsg('ایمیل و رمز عبور را وارد کن','err');
+  if(pass.length < 6) return setAuthMsg('رمز عبور باید حداقل ۶ کاراکتر باشد','err');
+  byId('authGo').disabled = true; setAuthMsg('در حال انجام…');
   try{
-    const r = await fetch('/api/tasks', {cache:'no-store'});
-    if(r.ok && (r.headers.get('content-type')||'').includes('json')){
-      tasks = await r.json(); backend='sqlite-server'; setStoreInfo('ذخیره در پایگاه‌داده SQLite (سرور محلی)'); render(); return;
+    if(mode==='signup'){
+      const {data, error} = await sb.auth.signUp({email, password:pass, options:{data:{full_name:name}}});
+      if(error) throw error;
+      if(!data.session){ authView('login','حساب ساخته شد. اگر ایمیل تأیید برایت آمده آن را بزن، بعد وارد شو.','ok'); return; }
+    } else {
+      const {error} = await sb.auth.signInWithPassword({email, password:pass});
+      if(error) throw error;
     }
-  }catch(e){}
-  // ۲) SQLite داخل مرورگر (مناسب GitHub Pages)
+  }catch(e){ setAuthMsg(faErr(e),'err'); const g=byId('authGo'); if(g) g.disabled=false; }
+}
+function pendingView(text){
+  showGate(`<div class="auth-card">
+    <div class="auth-brand">برنامه‌ریز</div>
+    <p style="font-size:14px; line-height:2;">${text || 'حساب تو ساخته شده و منتظر تأیید ادمین است. بعد از فعال‌شدن می‌توانی کارهایت را ثبت کنی.'}</p>
+    <div class="auth-row"><button class="bk-btn" id="pRetry">بررسی دوباره</button><button class="bk-btn" id="pOut">خروج</button></div>
+  </div>`);
+  byId('pRetry').addEventListener('click', ()=>{ const u=me; me=null; if(u) sb.auth.getSession().then(({data})=>data.session && enterApp(data.session)); });
+  byId('pOut').addEventListener('click', logout);
+}
+function resetState(){
+  tasks = []; me = null; myProfile = null; synced = new Map(); posMap = new Map();
+  currentStatusFilter='all'; currentCat='all'; currentView='list'; selectedCalDate=null;
+}
+async function logout(){
+  try{ await sb.auth.signOut(); }catch(e){}
+  resetState(); authView('login');
+}
+
+async function loadMyTasks(){
+  let all = [];
+  for(let from=0;; from+=1000){
+    const {data, error} = await sb.from('tasks').select('id,position,data').eq('user_id', me.id)
+      .order('position',{ascending:false}).order('id').range(from, from+999);
+    if(error) throw error;
+    all = all.concat(data);
+    if(data.length < 1000) break;
+  }
+  tasks = all.map(r=>r.data); synced = new Map(); posMap = new Map();
+  all.forEach(r=>{ const pos = Number(r.position); posMap.set(r.id,pos); synced.set(r.id, JSON.stringify(r.data)+'|'+pos); lastPos = Math.max(lastPos,pos); });
+}
+
+async function enterApp(session){
+  if(entering || (me && me.id===session.user.id)) return;
+  entering = true;
   try{
-    await openWasmDb();
-    tasks = dbReadTasks(SQLDB); backend='wasm';
-    try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){}
-    setStoreInfo('ذخیره در SQLite داخل مرورگر'); render(); return;
-  }catch(e){ console.warn('sql.js در دسترس نیست', e); }
-  // ۳) فضای ذخیره‌ی پیش‌نمایش claude.ai
-  try{
-    if(window.storage){
-      const res = await window.storage.get(STORAGE_KEY, false);
-      tasks = res && res.value ? JSON.parse(res.value) : [];
-      backend='storage'; setStoreInfo('ذخیره در فضای پیش‌نمایش'); render(); return;
-    }
-  }catch(e){}
-  // ۴) حافظه‌ی ساده‌ی مرورگر
-  tasks = lsRead(); backend='local';
-  setStoreInfo('ذخیره فقط در حافظه‌ی مرورگر');
-  render();
+    me = session.user;
+    const {data:prof, error} = await sb.from('profiles').select('*').eq('id', me.id).maybeSingle();
+    if(error) throw error;
+    myProfile = prof;
+    if(!prof){ pendingView('پروفایل حساب پیدا نشد. با ادمین تماس بگیر.'); return; }
+    if(!prof.approved){ pendingView(); return; }
+    await loadMyTasks();
+    hideGate(); renderUserBox(); setStoreInfo('همگام با پایگاه‌داده'); render();
+  }catch(e){
+    me = null;
+    showGate(`<div class="auth-card"><div class="auth-brand">برنامه‌ریز</div><p class="auth-msg err" style="font-size:13px;">${escapeHtml(faErr(e))}</p>
+      <div class="auth-row"><button class="bk-btn" id="eRetry">تلاش دوباره</button><button class="bk-btn" id="eOut">خروج</button></div></div>`);
+    byId('eRetry').addEventListener('click', ()=>sb.auth.getSession().then(({data})=>data.session ? enterApp(data.session) : authView('login')));
+    byId('eOut').addEventListener('click', logout);
+  }finally{ entering = false; }
+}
+
+function nextPos(){ lastPos = Math.max(Date.now(), lastPos+1); return lastPos; }
+async function syncNow(){
+  if(!me) return;
+  const rows = [], keep = new Set();
+  tasks.forEach(t=>{
+    const id = String(t.id); keep.add(id);
+    if(!posMap.has(id)) posMap.set(id, nextPos());
+    const snap = JSON.stringify(t), pos = posMap.get(id);
+    if(synced.get(id) !== snap+'|'+pos) rows.push({user_id:me.id, id, position:pos, data:JSON.parse(snap), updated_at:new Date().toISOString()});
+  });
+  const del = [...synced.keys()].filter(id=>!keep.has(id));
+  if(rows.length){
+    const {error} = await sb.from('tasks').upsert(rows, {onConflict:'user_id,id'});
+    if(error) throw error;
+    rows.forEach(r=>synced.set(r.id, JSON.stringify(r.data)+'|'+r.position));
+  }
+  if(del.length){
+    const {error} = await sb.from('tasks').delete().eq('user_id', me.id).in('id', del);
+    if(error) throw error;
+    del.forEach(id=>{ synced.delete(id); posMap.delete(id); });
+  }
+  setStoreInfo('همگام با پایگاه‌داده');
 }
 function saveTasks(){
-  const snapshot = JSON.stringify(tasks);
-  saveChain = saveChain.then(async ()=>{
-    try{
-      if(backend==='sqlite-server'){
-        const r = await fetch('/api/tasks', {method:'PUT', headers:{'Content-Type':'application/json'}, body:snapshot});
-        if(!r.ok) throw new Error('HTTP '+r.status);
-      } else if(backend==='wasm'){
-        dbWriteTasks(SQLDB, JSON.parse(snapshot));
-        await idbSet('db', SQLDB.export());
-      } else if(backend==='storage'){
-        await window.storage.set(STORAGE_KEY, snapshot, false);
-      } else {
-        localStorage.setItem(STORAGE_KEY, snapshot);
-      }
-    }catch(e){
-      console.error('ذخیره‌سازی ناموفق بود', e);
-      setStoreInfo('⚠ ذخیره نشد — '+(e.message||'خطا'), true);
-    }
-  });
+  saveChain = saveChain.then(syncNow).catch(e=>{ console.error('ذخیره‌سازی ناموفق بود', e); setStoreInfo('⚠ ذخیره نشد — '+faErr(e), true); });
   return saveChain;
+}
+
+/* ---------- پنل ادمین ---------- */
+function renderUserBox(){
+  const isAdmin = myProfile && myProfile.role==='admin';
+  byId('userBox').innerHTML = `<span>سلام <b>${escapeHtml(myProfile.full_name || me.email)}</b></span>
+    ${isAdmin ? '<button class="ubtn" id="adminBtn">پنل ادمین<span class="nb" id="pendNb" style="display:none"></span></button>' : ''}
+    <button class="ubtn" id="outBtn">خروج</button>`;
+  byId('outBtn').addEventListener('click', logout);
+  if(isAdmin){
+    byId('adminBtn').addEventListener('click', openAdmin);
+    sb.from('profiles').select('id',{count:'exact',head:true}).eq('approved',false).then(({count})=>{
+      const nb = byId('pendNb'); if(nb && count){ nb.textContent = toFa(count); nb.style.display=''; }
+    });
+  }
+}
+function closeAdmin(){ byId('adminModal').classList.remove('open'); renderUserBox(); }
+async function openAdmin(){
+  byId('adminModal').classList.add('open');
+  const body = byId('adminBody'); body.textContent = 'در حال بارگذاری…';
+  const [pr, cr] = await Promise.all([
+    sb.from('profiles').select('*').order('created_at',{ascending:false}),
+    sb.rpc('admin_task_counts')
+  ]);
+  if(pr.error){ body.textContent = faErr(pr.error); return; }
+  const counts = new Map((cr.data||[]).map(r=>[r.user_id, Number(r.n)]));
+  const users = pr.data.slice().sort((a,b)=> (a.approved===b.approved ? 0 : a.approved ? 1 : -1));
+  body.innerHTML = `<div style="overflow-x:auto"><table class="atable"><tr><th>نام</th><th>ایمیل</th><th>ثبت‌نام</th><th>وضعیت</th><th>نقش</th><th>تعداد کار</th><th>عملیات</th></tr>
+    ${users.map(u=>{
+      const self = u.id===me.id;
+      return `<tr><td>${escapeHtml(u.full_name||'—')}</td><td class="em">${escapeHtml(u.email||'')}</td>
+        <td>${new Date(u.created_at).toLocaleDateString('fa-IR')}</td>
+        <td><span class="pill-s ${u.approved?'ok':'wait'}">${u.approved?'فعال':'منتظر تأیید'}</span></td>
+        <td>${u.role==='admin'?'ادمین':'کاربر'}</td><td>${toFa(counts.get(u.id)||0)}</td>
+        <td>${self ? '<span style="color:var(--muted)">حساب خودت</span>' :
+          `${u.approved ? `<button class="abtn no" data-a="revoke" data-id="${u.id}">قطع دسترسی</button>` : `<button class="abtn go" data-a="approve" data-id="${u.id}">فعال‌سازی</button>`}
+           <button class="abtn" data-a="role" data-r="${u.role}" data-id="${u.id}">${u.role==='admin'?'تبدیل به کاربر':'تبدیل به ادمین'}</button>`}</td></tr>`;
+    }).join('')}</table></div>`;
+  body.querySelectorAll('[data-a]').forEach(b=>b.addEventListener('click', async ()=>{
+    const a = b.dataset.a;
+    if(a==='role' && b.dataset.r!=='admin' && !confirm('این کاربر ادمین شود؟')) return;
+    const patch = a==='approve' ? {approved:true} : a==='revoke' ? {approved:false} : {role: b.dataset.r==='admin' ? 'user' : 'admin'};
+    const {error} = await sb.from('profiles').update(patch).eq('id', b.dataset.id);
+    if(error) alert(faErr(error)); else openAdmin();
+  }));
+}
+
+/* ---------- راه‌اندازی ---------- */
+async function boot(){
+  if(!CFG.SUPABASE_URL || !CFG.SUPABASE_ANON_KEY || /YOUR_/.test(CFG.SUPABASE_URL+CFG.SUPABASE_ANON_KEY)){
+    showGate(`<div class="auth-card"><div class="auth-brand">راه‌اندازی لازم است</div>
+      <p class="auth-note">فایل <b>config.js</b> را باز کن و آدرس پروژه و کلید عمومی (anon key) Supabase را در آن بنویس، بعد صفحه را دوباره باز کن.</p></div>`);
+    return;
+  }
+  if(typeof supabase === 'undefined'){
+    showGate('<div class="auth-card"><div class="auth-brand">خطا</div><p class="auth-note">فایل supabase.js کنار index.html پیدا نشد.</p></div>');
+    return;
+  }
+  sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
+  sb.auth.onAuthStateChange((event, session)=>{
+    if(event==='SIGNED_OUT'){ resetState(); authView('login'); }
+    else if(event==='SIGNED_IN' && session) setTimeout(()=>enterApp(session),0);
+  });
+  const {data} = await sb.auth.getSession();
+  if(data.session) enterApp(data.session); else authView('login');
 }
 
 /* ---------- پشتیبان‌گیری ---------- */
@@ -590,24 +735,17 @@ function downloadFile(name, data, type){
   setTimeout(()=>URL.revokeObjectURL(a.href), 3000);
 }
 function exportJson(){ downloadFile('tasks-backup.json', JSON.stringify(tasks,null,2), 'application/json'); }
-function exportDb(){
-  if(backend!=='wasm'){ alert('فایل .db فقط وقتی ساخته می‌شود که ذخیره‌سازی SQLite داخل مرورگر فعال باشد. از دکمه‌ی JSON استفاده کن.'); return; }
-  downloadFile('tasks.db', SQLDB.export(), 'application/octet-stream');
-}
 async function restoreFile(file){
   if(!file) return;
   try{
-    let items;
-    if(/\.json$/i.test(file.name)){
-      items = JSON.parse(await file.text());
-    } else {
-      if(!SQLMOD){ alert('برای خواندن فایل .db باید SQLite داخل مرورگر فعال باشد.'); return; }
-      const tmp = new SQLMOD.Database(new Uint8Array(await file.arrayBuffer()));
-      items = dbReadTasks(tmp); tmp.close();
-    }
+    let items = JSON.parse(await file.text());
     if(!Array.isArray(items) || !items.every(t=>t && typeof t==='object' && 'id' in t)) throw new Error('فرمت فایل درست نیست');
-    if(!confirm(`${items.length} کار از فایل خوانده شد. جایگزین همه‌ی کارهای فعلی شود؟`)) return;
-    tasks = items; await saveTasks(); render();
+    const seen = new Set(); items = items.filter(t=>{ const id=String(t.id); if(seen.has(id)) return false; seen.add(id); return true; });
+    if(!confirm(`${items.length} کار از فایل خوانده شد. جایگزین همه‌ی کارهای فعلی تو شود؟`)) return;
+    tasks = items; posMap = new Map();
+    const base = Math.max(Date.now(), lastPos) + items.length; lastPos = base;
+    items.forEach((t,i)=>posMap.set(String(t.id), base-i));
+    await saveTasks(); render();
   }catch(e){ alert('بازیابی ناموفق بود: '+e.message); }
 }
 
@@ -1041,7 +1179,7 @@ document.getElementById('calNext').addEventListener('click', ()=>{
 
 document.getElementById('todayLabel').textContent = new Date().toLocaleDateString('fa-IR', {weekday:'long', day:'numeric', month:'long'});
 setGreeting();
-loadTasks();
+boot();
 </script>
 </body>
 </html>
