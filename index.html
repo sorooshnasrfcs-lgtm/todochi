@@ -181,6 +181,8 @@
   .st[data-s=doing]{color:var(--purple); border-color:var(--purple);}
   .st[data-s=waiting]{color:var(--amber); border-color:var(--amber);}
   .st[data-s=done]{color:var(--green); border-color:var(--green);}
+  .bk-btn{background:var(--panel-2); border:1px solid var(--line); color:var(--text); border-radius:var(--r-sm); padding:9px 12px; font-family:inherit; font-size:12.5px; cursor:pointer; text-align:right; transition:border-color .15s;}
+  .bk-btn:hover{border-color:var(--purple); color:var(--purple);}
   .col-title{ font-size:12.5px; color:var(--muted); font-weight:600; margin: 2px 4px; }
 
   .task-list{ display:flex; flex-direction:column; gap:9px; }
@@ -297,6 +299,7 @@
     <div class="hero-left">
       <div class="greet" id="heroGreet">خوش اومدی</div>
       <div class="subdate" id="todayLabel"></div>
+        <div class="subdate" id="storeInfo" style="font-size:11.5px; margin-top:3px;"></div>
     </div>
     <div class="hero-pills">
       <div class="pill"><span class="dot" style="background:var(--amber)"></span><span class="l">امروز</span><b id="hero-today">۰</b></div>
@@ -418,6 +421,16 @@
       </div>
 
       <div class="card">
+        <h3>پشتیبان‌گیری</h3>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button class="bk-btn" onclick="exportDb()">دانلود فایل SQLite (.db)</button>
+          <button class="bk-btn" onclick="exportJson()">دانلود فایل JSON</button>
+          <button class="bk-btn" onclick="document.getElementById('restoreInput').click()">بازیابی از فایل</button>
+          <input type="file" id="restoreInput" accept=".db,.sqlite,.json" style="display:none" onchange="restoreFile(this.files[0]); this.value='';">
+        </div>
+      </div>
+
+      <div class="card">
         <h3>یادآوری‌های تکراری 🔁</h3>
         <div id="recBreakdown"></div>
       </div>
@@ -460,16 +473,142 @@ function getJalaliParts(date){
   return {jy:o.year, jm:o.month, jd:o.day};
 }
 
-async function loadTasks(){
+let backend = 'none';
+let saveChain = Promise.resolve();
+let SQLMOD = null, SQLDB = null;
+
+/* ---------- SQLite داخل مرورگر (sql.js) + ذخیره‌ی پایدار در IndexedDB ---------- */
+function idbOpen(){
+  return new Promise((res,rej)=>{
+    const r = indexedDB.open('planner-db',1);
+    r.onupgradeneeded = ()=>r.result.createObjectStore('kv');
+    r.onsuccess = ()=>res(r.result); r.onerror = ()=>rej(r.error);
+  });
+}
+async function idbGet(k){
+  const d = await idbOpen();
+  return new Promise((res,rej)=>{ const q=d.transaction('kv').objectStore('kv').get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); });
+}
+async function idbSet(k,v){
+  const d = await idbOpen();
+  return new Promise((res,rej)=>{ const tx=d.transaction('kv','readwrite'); tx.objectStore('kv').put(v,k); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); });
+}
+function loadScript(src){
+  return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>rej(new Error('load '+src)); document.head.appendChild(s); });
+}
+const SCHEMA = `CREATE TABLE IF NOT EXISTS tasks (
+  id TEXT PRIMARY KEY, position INTEGER NOT NULL, title TEXT, kind TEXT, category TEXT,
+  priority TEXT, task_date TEXT, person TEXT, note TEXT, done INTEGER, recurring TEXT, data TEXT NOT NULL)`;
+async function openWasmDb(){
+  await loadScript('sql-wasm.js');
+  SQLMOD = await initSqlJs({locateFile: f=>f});
+  let bytes = null;
+  try{ bytes = await idbGet('db'); }catch(e){}
+  SQLDB = bytes ? new SQLMOD.Database(bytes) : new SQLMOD.Database();
+  SQLDB.run(SCHEMA);
+}
+function dbReadTasks(db){
+  const r = db.exec('SELECT data FROM tasks ORDER BY position');
+  return r.length ? r[0].values.map(v=>JSON.parse(v[0])) : [];
+}
+function dbWriteTasks(db, items){
+  db.run('BEGIN');
   try{
-    const res = await window.storage.get(STORAGE_KEY, false);
-    tasks = res && res.value ? JSON.parse(res.value) : [];
-  }catch(e){ tasks = []; }
+    db.run('DELETE FROM tasks');
+    const st = db.prepare('INSERT INTO tasks VALUES (?,?,?,?,?,?,?,?,?,?,?,?)');
+    items.forEach((t,i)=>st.run([
+      String(t.id), i, t.title ?? null, t.kind || 'mine', t.cat ?? null, t.prio ?? null,
+      t.date ?? null, t.person ?? null, t.note ?? null, t.done ? 1 : 0,
+      t.recurring ? JSON.stringify(t.recurring) : null, JSON.stringify(t)
+    ]));
+    st.free(); db.run('COMMIT');
+  }catch(e){ db.run('ROLLBACK'); throw e; }
+}
+
+/* ---------- بارگذاری / ذخیره ---------- */
+function lsRead(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }catch(e){ return []; } }
+function setStoreInfo(txt, bad){
+  const el = document.getElementById('storeInfo');
+  if(el){ el.textContent = txt; el.style.color = bad ? '#ff9b8f' : ''; }
+}
+async function loadTasks(){
+  // ۱) سرور محلی (server.py + فایل tasks.db)
+  try{
+    const r = await fetch('/api/tasks', {cache:'no-store'});
+    if(r.ok && (r.headers.get('content-type')||'').includes('json')){
+      tasks = await r.json(); backend='sqlite-server'; setStoreInfo('ذخیره در پایگاه‌داده SQLite (سرور محلی)'); render(); return;
+    }
+  }catch(e){}
+  // ۲) SQLite داخل مرورگر (مناسب GitHub Pages)
+  try{
+    await openWasmDb();
+    tasks = dbReadTasks(SQLDB); backend='wasm';
+    try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){}
+    setStoreInfo('ذخیره در SQLite داخل مرورگر'); render(); return;
+  }catch(e){ console.warn('sql.js در دسترس نیست', e); }
+  // ۳) فضای ذخیره‌ی پیش‌نمایش claude.ai
+  try{
+    if(window.storage){
+      const res = await window.storage.get(STORAGE_KEY, false);
+      tasks = res && res.value ? JSON.parse(res.value) : [];
+      backend='storage'; setStoreInfo('ذخیره در فضای پیش‌نمایش'); render(); return;
+    }
+  }catch(e){}
+  // ۴) حافظه‌ی ساده‌ی مرورگر
+  tasks = lsRead(); backend='local';
+  setStoreInfo('ذخیره فقط در حافظه‌ی مرورگر');
   render();
 }
-async function saveTasks(){
-  try{ await window.storage.set(STORAGE_KEY, JSON.stringify(tasks), false); }
-  catch(e){ console.error('ذخیره‌سازی ناموفق بود', e); }
+function saveTasks(){
+  const snapshot = JSON.stringify(tasks);
+  saveChain = saveChain.then(async ()=>{
+    try{
+      if(backend==='sqlite-server'){
+        const r = await fetch('/api/tasks', {method:'PUT', headers:{'Content-Type':'application/json'}, body:snapshot});
+        if(!r.ok) throw new Error('HTTP '+r.status);
+      } else if(backend==='wasm'){
+        dbWriteTasks(SQLDB, JSON.parse(snapshot));
+        await idbSet('db', SQLDB.export());
+      } else if(backend==='storage'){
+        await window.storage.set(STORAGE_KEY, snapshot, false);
+      } else {
+        localStorage.setItem(STORAGE_KEY, snapshot);
+      }
+    }catch(e){
+      console.error('ذخیره‌سازی ناموفق بود', e);
+      setStoreInfo('⚠ ذخیره نشد — '+(e.message||'خطا'), true);
+    }
+  });
+  return saveChain;
+}
+
+/* ---------- پشتیبان‌گیری ---------- */
+function downloadFile(name, data, type){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([data], {type})); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 3000);
+}
+function exportJson(){ downloadFile('tasks-backup.json', JSON.stringify(tasks,null,2), 'application/json'); }
+function exportDb(){
+  if(backend!=='wasm'){ alert('فایل .db فقط وقتی ساخته می‌شود که ذخیره‌سازی SQLite داخل مرورگر فعال باشد. از دکمه‌ی JSON استفاده کن.'); return; }
+  downloadFile('tasks.db', SQLDB.export(), 'application/octet-stream');
+}
+async function restoreFile(file){
+  if(!file) return;
+  try{
+    let items;
+    if(/\.json$/i.test(file.name)){
+      items = JSON.parse(await file.text());
+    } else {
+      if(!SQLMOD){ alert('برای خواندن فایل .db باید SQLite داخل مرورگر فعال باشد.'); return; }
+      const tmp = new SQLMOD.Database(new Uint8Array(await file.arrayBuffer()));
+      items = dbReadTasks(tmp); tmp.close();
+    }
+    if(!Array.isArray(items) || !items.every(t=>t && typeof t==='object' && 'id' in t)) throw new Error('فرمت فایل درست نیست');
+    if(!confirm(`${items.length} کار از فایل خوانده شد. جایگزین همه‌ی کارهای فعلی شود؟`)) return;
+    tasks = items; await saveTasks(); render();
+  }catch(e){ alert('بازیابی ناموفق بود: '+e.message); }
 }
 
 function addTask(prefillDate){
